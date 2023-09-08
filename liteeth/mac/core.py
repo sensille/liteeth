@@ -21,7 +21,9 @@ class LiteEthMACCore(Module, AutoCSR):
     def __init__(self, phy, dw,
                  with_sys_datapath = False,
                  with_preamble_crc = True,
-                 with_padding      = True):
+                 with_padding      = True,
+                 rx_cdc_buffered   = False,
+                 tx_cdc_buffered   = False):
 
         # Endpoints.
         self.sink   = stream.Endpoint(eth_phy_description(dw))
@@ -53,11 +55,12 @@ class LiteEthMACCore(Module, AutoCSR):
             def __init__(self):
                 self.pipeline = []
 
-            def add_cdc(self):
+            def add_cdc(self, buffered = False):
                 tx_cdc = stream.ClockDomainCrossing(eth_phy_description(core_dw),
-                    cd_from = "sys",
-                    cd_to   = "eth_tx",
-                    depth   = 32)
+                    cd_from  = "sys",
+                    cd_to    = "eth_tx",
+                    depth    = 32,
+                    buffered = buffered)
                 self.submodules += tx_cdc
                 self.pipeline.append(tx_cdc)
 
@@ -107,7 +110,7 @@ class LiteEthMACCore(Module, AutoCSR):
         tx_datapath.pipeline.append(self.sink)
         if not with_sys_datapath:
             # CHECKME: Verify converter/cdc order for the different cases.
-            tx_datapath.add_cdc()
+            tx_datapath.add_cdc(buffered = tx_cdc_buffered)
             if core_dw != phy_dw:
                 tx_datapath.add_converter()
             if core_dw != 8:
@@ -119,7 +122,7 @@ class LiteEthMACCore(Module, AutoCSR):
             tx_datapath.add_preamble()
         if with_sys_datapath:
             # CHECKME: Verify converter/cdc order for the different cases.
-            tx_datapath.add_cdc()
+            tx_datapath.add_cdc(buffered = tx_cdc_buffered)
             if core_dw != phy_dw:
                 tx_datapath.add_converter()
             if core_dw != 8:
@@ -182,11 +185,12 @@ class LiteEthMACCore(Module, AutoCSR):
                 self.submodules += rx_converter
                 self.pipeline.append(rx_converter)
 
-            def add_cdc(self):
+            def add_cdc(self, buffered = False):
                 rx_cdc = stream.ClockDomainCrossing(eth_phy_description(core_dw),
-                    cd_from = "eth_rx",
-                    cd_to   = "sys",
-                    depth   = 32)
+                    cd_from  = "eth_rx",
+                    cd_to    = "sys",
+                    depth    = 32,
+                    buffered = buffered)
                 self.submodules += rx_cdc
                 self.pipeline.append(rx_cdc)
 
@@ -201,7 +205,7 @@ class LiteEthMACCore(Module, AutoCSR):
             # CHECKME: Verify converter/cdc order for the different cases.
             if core_dw != phy_dw:
                 rx_datapath.add_converter()
-            rx_datapath.add_cdc()
+            rx_datapath.add_cdc(buffered = rx_cdc_buffered)
         if with_preamble_crc:
             rx_datapath.add_preamble()
             rx_datapath.add_crc()
@@ -213,6 +217,6 @@ class LiteEthMACCore(Module, AutoCSR):
             # CHECKME: Verify converter/cdc order for the different cases.
             if core_dw != phy_dw:
                 rx_datapath.add_converter()
-            rx_datapath.add_cdc()
+            rx_datapath.add_cdc(buffered = rx_cdc_buffered)
         rx_datapath.pipeline.append(self.source)
         self.submodules.rx_datapath = rx_datapath

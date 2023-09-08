@@ -22,7 +22,9 @@ class LiteEthMAC(Module, AutoCSR):
         hw_mac            = None,
         timestamp         = None,
         full_memory_we    = False,
-        with_sys_datapath = False):
+        with_sys_datapath = False,
+        rx_cdc_buffered   = False,
+        tx_cdc_buffered   = False):
 
         assert dw%8 == 0
         assert interface  in ["crossbar", "wishbone", "hybrid"]
@@ -32,7 +34,9 @@ class LiteEthMAC(Module, AutoCSR):
             phy               = phy,
             dw                = dw,
             with_sys_datapath = with_sys_datapath,
-            with_preamble_crc = with_preamble_crc
+            with_preamble_crc = with_preamble_crc,
+            rx_cdc_buffered   = rx_cdc_buffered,
+            tx_cdc_buffered   = tx_cdc_buffered,
         )
         self.csrs = []
         if interface == "crossbar":
